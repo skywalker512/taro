@@ -31,6 +31,14 @@ export async function mount (node, wrapper) {
       return Promise.resolve()
     }
 
+    find = (selector) => {
+      return ref.current.querySelector(selector)
+    }
+
+    findAll = (selector) => {
+      return ref.current.querySelectorAll(selector)
+    }
+
     render () {
       const { Component, props } = this.state
       return <Component ref={ref} {...props} />
@@ -43,6 +51,8 @@ export async function mount (node, wrapper) {
 
   return Promise.resolve({
     node: ref.current,
-    setProps: app.current.setProps
+    setProps: app.current.setProps,
+    find: app.current.find,
+    findAll: app.current.findAll
   })
 }

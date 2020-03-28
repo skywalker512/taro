@@ -32,6 +32,7 @@ const View = {
   'hover-start-time': '50',
   'hover-stay-time': '400',
   animation: '',
+  bindAnimationEnd: '',
   ...touchEvents
 }
 
@@ -73,7 +74,8 @@ const Map = {
   bindCalloutTap: '',
   bindUpdated: '',
   bindRegionChange: '',
-  bindPoiTap: ''
+  bindPoiTap: '',
+  ...touchEvents
 }
 
 const Progress = {
@@ -104,7 +106,7 @@ const Text = {
 
 const Button = {
   size: singleQuote('default'),
-  type: singleQuote('default'),
+  type: '',
   plain: 'false',
   disabled: '',
   loading: 'false',
@@ -318,6 +320,7 @@ const MovableView = {
   'scale-max': '10',
   'scale-value': '1',
   animation: 'true',
+  bindAnimationEnd: '',
   bindChange: '',
   bindScale: '',
   htouchmove: '',
@@ -457,6 +460,42 @@ const LivePlayer = {
   bindStateChange: '',
   bindFullScreenChange: '',
   bindNetStatus: ''
+}
+
+const LivePusher = {
+  url: '',
+  mode: singleQuote('RTC'),
+  autopush: 'false',
+  muted: 'false',
+  'enable-camera': 'true',
+  'auto-focus	': 'true',
+  orientation: singleQuote('vertical'),
+  beauty: '0',
+  whiteness: '0',
+  aspect: singleQuote('9:16	'),
+  'min-bitrate': '200',
+  'max-bitrate': '1000',
+  'audio-quality': singleQuote('high'),
+  'waiting-image': '',
+  'waiting-image-hash': '',
+  'zoom': 'false',
+  'device-position': singleQuote('front'),
+  'background-mute': 'false',
+  'mirror': 'false',
+  'remote-mirror': 'false',
+  'local-mirror	': 'false',
+  'audio-reverb-type': '0',
+  'enable-mic': 'true',
+  'enable-agc': 'false',
+  'enable-ans': 'false',
+  'audio-volume-type': singleQuote('voicecall'),
+  'video-width': '360',
+  'video-height': '640',
+  'bindstatechange': '',
+  'bindnetstatus': '',
+  'bindbgmstart': '',
+  'bindbgmprogress': '',
+  'bindbgmcomplete': '',
 }
 
 const Video = {
@@ -639,6 +678,7 @@ export const internalComponents = {
   Camera,
   Image,
   LivePlayer,
+  LivePusher,
   Video,
   Canvas,
   Ad,
