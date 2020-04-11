@@ -12,11 +12,11 @@ function isNumeric (n) {
 
 const NumberWords = ['z', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k']
 
-export function buildTemplateName (name: string): string {
+export function buildTemplateName (name: string, pascal = true): string {
   if (/wx/i.test(name)) {
     return buildTemplateName('taro-' + name.slice(2, name.length))
   }
-  const words = pascalName(name + '-tmpl')
+  const words = pascal ? pascalName(name + '-tmpl') : name + '-tmpl'
   // return words
   const str: string[] = []
   for (const word of words) {
@@ -26,6 +26,7 @@ export function buildTemplateName (name: string): string {
       str.push(word)
     }
   }
+
   return str.join('')
 }
 
@@ -158,7 +159,9 @@ export function parseTemplate (path: NodePath<t.JSXElement>, dirPath: string) {
 
 export function getWXMLsource (dirPath: string, src: string, type: string) {
   try {
-    return fs.readFileSync(resolve(dirPath, src), 'utf-8')
+    const file = fs.readFileSync(resolve(dirPath, src), 'utf-8')
+    debugger
+    return file
   } catch (e) {
     errors.push(`找不到这个路径的 wxml: <${type} src="${src}" />，该标签将会被忽略掉`)
     return ''
@@ -191,14 +194,12 @@ export function parseModule (jsx: NodePath<t.JSXElement>, dirPath: string, type:
   }
   if (type === 'import') {
     const wxml = getWXMLsource(dirPath, srcValue, type)
-    console.log(dirPath, srcValue)
     const { imports } = parseWXML(resolve(dirPath, srcValue), wxml, true)
     try {
       jsx.remove()
     } catch (error) {
       //
     }
-    console.log(imports)
     return imports
   } else {
     const wxmlStr = getWXMLsource(dirPath, srcValue, type)

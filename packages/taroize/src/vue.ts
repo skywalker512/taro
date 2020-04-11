@@ -2,16 +2,23 @@
 import { parse, stringify } from 'himalaya-wxml'
 import * as t from 'babel-types'
 import traverse, { Visitor } from 'babel-traverse'
-import { AllKindNode, Attribute, WX_IF, WX_ELSE_IF, WX_ELSE, WX_FOR, parseContent, WX_KEY, Element, WX_FOR_ITEM, WX_FOR_INDEX, NodeType } from './wxml'
+import { AllKindNode, Attribute, WX_IF, WX_ELSE_IF, WX_ELSE, WX_FOR, parseContent, WX_KEY, Element, WX_FOR_ITEM, WX_FOR_INDEX, NodeType, Text } from './wxml'
 import { buildTemplateName, getWXMLsource } from './template'
 import * as fs from 'fs'
 import { relative, resolve } from 'path'
 import { setting, parseCode, buildImportStatement, codeFrameError } from './utils'
 import { replaceIdentifier, replaceMemberExpression } from './script'
+import { kebabCase } from 'lodash'
 
 const { prettyPrint } = require('html')
 
-export function parseVue (dirPath: string, wxml?: string, jsCode = '') {
+interface Result {
+  ast: t.File
+  template: string
+  imports: VueImport[]
+}
+
+export function parseVue (dirPath: string, wxml: string, jsCode = ''): Result {
   let ast = parseCode(jsCode)
   let foundWXInstance = false
   const vistor: Visitor = {
@@ -67,10 +74,16 @@ export function parseVue (dirPath: string, wxml?: string, jsCode = '') {
     // ...wxses.filter(wxs => !wxs.src.startsWith('./wxs__')).map(wxs => buildImportStatement(wxs.src, [], wxs.module))
   )
 
-  return ast
+  const { imports, template } = parseWXML(dirPath, wxml, [])
+
+  return {
+    ast,
+    imports,
+    template
+  }
 }
 
-export function parseWXML (dirPath: string, wxml?: string, imports?: VueImport[]) {
+export function parseWXML (dirPath: string, wxml: string, imports: VueImport[]) {
   // const parseResult = getCacheWxml(dirPath)
   // if (parseResult) {
   //   return parseResult
@@ -86,20 +99,16 @@ export function parseWXML (dirPath: string, wxml?: string, imports?: VueImport[]
     //
   }
 
-  if (wxml == null) {
-    return
-  }
-
   const nodes: AllKindNode[] = parse(wxml.trim()).map(node => parseNode(node, dirPath, imports))
-  const code = generateVueFile(nodes, '')
+  const template = generateVueFile(nodes)
   return {
     nodes,
-    code,
+    template,
     imports
   }
 }
 
-function parseElement (element: Element, dirPath: string, imports: VueImport[]): Element {
+function parseElement (element: Element, dirPath: string, imports: VueImport[]): Element | Text {
   let forItem = 'item'
   let forIndex = 'index'
 
@@ -113,7 +122,10 @@ function parseElement (element: Element, dirPath: string, imports: VueImport[]):
     case 'import':
     case 'include':
       parseModule(element, dirPath, imports)
-      break
+      return {
+        type: NodeType.Text,
+        content: ''
+      }
     default:
       break
   }
@@ -240,6 +252,12 @@ function parseAttribute (attr: Attribute, forItem: string, forIndex: string): At
     value = 'emptyHandler'
   }
 
+  if (key.startsWith(':')) {
+    key = ':' + kebabCase(key.slice(1))
+  } else {
+    key = kebabCase(key)
+  }
+
   return {
     key,
     value
@@ -255,25 +273,20 @@ function createElement (tagName: string): Element {
   }
 }
 
-export function generateVueFile (children: AllKindNode[], jsCode: string): string {
+export function generateVueFile (children: AllKindNode[]): string {
   const template = createElement('template')
   const container = createElement('block')
   container.children = children
   template.children = [container]
 
-  const script = createElement('script')
-  script.children = [{
-    type: NodeType.Text,
-    content: jsCode
-  }]
-
-  return stringify([template, script])
+  return stringify([template])
 }
 
 interface VueImport {
   name?: string
-  nodes: AllKindNode[]
-  code: string
+  template?: string
+  ast?: t.File,
+  wxs?: boolean
 }
 
 export function parseTemplate (element: Element, imports: VueImport[]) {
@@ -290,11 +303,10 @@ export function parseTemplate (element: Element, imports: VueImport[]) {
     }
 
     const componentName = buildTemplateName(name.key)
-    const component = parseWXML('', stringify(children))!
+    const component = parseWXML('', stringify(children), imports)!
     imports.push({
       name: componentName,
-      nodes: component.nodes,
-      code: component.code
+      template: component.template
     })
   } else if (is) {
     const value = is.value
@@ -307,11 +319,11 @@ export function parseTemplate (element: Element, imports: VueImport[]) {
       console.warn('template 的属性 is 只能是一个字符串，考虑更改以下源码逻辑：\n', stringify(element))
     }
 
-    element.tagName = buildTemplateName(value!)
+    element.tagName = buildTemplateName(value!, false)
     element.attributes = []
     if (data) {
       element.attributes.push({
-        key: ':data',
+        key: 'data',
         value: data.value
       })
     }
@@ -351,8 +363,8 @@ export function parseModule (element: Element, dirPath: string, imports: VueImpo
 
   if (tagName === 'import') {
     const wxml = getWXMLsource(dirPath, srcValue, tagName)
-    const mods = parseWXML(resolve(dirPath, srcValue), wxml)?.imports
-    imports.push(...(mods ?? []))
+    const mods = parseWXML(resolve(dirPath, srcValue), wxml, imports || [])?.imports
+    imports.push(...(mods || []))
   } else {
     console.warn(`暂不支持 ${tagName} 标签的转换`, '考虑修改源码使用 import 替代\n' + stringify(element))
   }

@@ -1,6 +1,6 @@
 {
   "name": "@tarojs/components",
-  "version": "3.0.0-beta.1",
+  "version": "3.0.0-beta.3",
   "description": "",
   "main:h5": "src/index.js",
   "main": "dist/index.js",
@@ -15,7 +15,8 @@
     "loader",
     "mini",
     "types",
-    "h5"
+    "h5",
+    "virtual-list"
   ],
   "collection": "dist/collection/collection-manifest.json",
   "collection:main": "dist/collection/index.js",
@@ -39,7 +40,7 @@
   "license": "MIT",
   "dependencies": {
     "@stencil/core": "^1.8.1",
-    "@tarojs/taro": "3.0.0-beta.1",
+    "@tarojs/taro": "3.0.0-beta.3",
     "better-scroll": "^1.14.1",
     "classnames": "^2.2.5",
     "intersection-observer": "^0.7.0",

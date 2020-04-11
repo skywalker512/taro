@@ -1,4 +1,4 @@
-import { Component, ComponentClass } from 'react'
+import type { Component, ComponentClass } from 'react'
 import VueCtor, { ComponentOptions, VNode } from 'vue'
 import { CombinedVueInstance } from 'vue/types/vue'
 import { MpEvent } from '../dom/event'
@@ -12,7 +12,7 @@ export interface Instance<T = {}> extends Component<T>, Show, PageInstance {
 }
 
 export interface VueAppInstance extends ComponentOptions<VueCtor> {
-  $options: Show
+  $options: AppInstance
 }
 
 export type VueInstance<M = object, P = object> = CombinedVueInstance<VueCtor, object, M, P, Record<never, any>> & VueInternal
@@ -34,6 +34,10 @@ export interface ReactPageInstance<T = PageProps> extends Component<T>, Show, Pa
   //
 }
 
+export interface ReactAppInstance<T = AppInstance> extends Component<T>, Show, AppInstance {
+  //
+}
+
 export interface PageLifeCycle extends Show {
   onPullDownRefresh?(): void
   onReachBottom?(): void
@@ -45,6 +49,7 @@ export interface PageLifeCycle extends Show {
   onTitleClick?(): void
   onOptionMenuClick?(): void
   onPopMenuClick?(): void
+  onReady?(): void
   onPullIntercept?(): void
   eh?(event: MpEvent): void
   onLoad(options: Record<string, unknown>): void
@@ -65,7 +70,7 @@ interface Show {
 }
 
 export interface AppInstance extends Show {
-  onLaunch (options?: string): void
-  mount (component: React.ComponentClass | ComponentOptions<VueCtor>, id: string, cb: () => void): void
-  unmount (id: string, cb: () => void): void
+  onLaunch? (options?: string): void
+  mount? (component: React.ComponentClass | ComponentOptions<VueCtor>, id: string, cb: () => void): void
+  unmount? (id: string, cb: () => void): void
 }

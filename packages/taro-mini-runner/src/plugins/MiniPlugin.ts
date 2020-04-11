@@ -7,6 +7,8 @@ import * as FunctionModulePlugin from 'webpack/lib/FunctionModulePlugin'
 import * as JsonpTemplatePlugin from 'webpack/lib/web/JsonpTemplatePlugin'
 import * as NodeSourcePlugin from 'webpack/lib/node/NodeSourcePlugin'
 import * as LoaderTargetPlugin from 'webpack/lib/LoaderTargetPlugin'
+import { ConcatSource } from 'webpack-sources'
+import { urlToRequest } from 'loader-utils'
 import { AppConfig } from '@tarojs/taro'
 import {
   resolveMainFilePath,
@@ -17,6 +19,7 @@ import {
   MINI_APP_FILES,
   CONFIG_MAP,
   META_TYPE,
+  REG_STYLE,
   NODE_MODULES_REG,
   FRAMEWORK_MAP,
   VUE_EXT,
@@ -88,6 +91,7 @@ export default class TaroMiniPlugin {
   tabBarIcons: Set<string>
   prerenderPages: Set<string>
   dependencies: Map<string, TaroSingleEntryDependency>
+  private loadChunksPlugin: TaroLoadChunksPlugin
 
   constructor (options = {}) {
     this.options = Object.assign({
@@ -141,14 +145,17 @@ export default class TaroMiniPlugin {
           this.isWatch = true
         }
         await this.run(compiler)
-        new TaroLoadChunksPlugin({
-          commonChunks: this.options.commonChunks,
-          buildAdapter: this.options.buildAdapter,
-          isBuildPlugin: false,
-          addChunkPages: this.options.addChunkPages,
-          pages: this.pages,
-          framework: this.options.framework
-        }).apply(compiler)
+        if (!this.loadChunksPlugin) {
+          this.loadChunksPlugin = new TaroLoadChunksPlugin({
+            commonChunks: this.options.commonChunks,
+            buildAdapter: this.options.buildAdapter,
+            isBuildPlugin: false,
+            addChunkPages: this.options.addChunkPages,
+            pages: this.pages,
+            framework: this.options.framework
+          })
+          this.loadChunksPlugin.apply(compiler)
+        }
       })
     )
 
@@ -545,6 +552,26 @@ export default class TaroMiniPlugin {
     return this.options.buildAdapter !== BUILD_TYPES.WEAPP && this.options.buildAdapter !== BUILD_TYPES.QQ
   }
 
+  injectCommonStyles ({ assets }: webpack.compilation.Compilation) {
+    const styleExt = MINI_APP_FILES[this.options.buildAdapter].STYLE
+    const appStyle = `app${styleExt}`
+    const originSource = assets[appStyle].source()
+    const source = new ConcatSource()
+
+    Object.keys(assets).forEach(assetName => {
+      const fileName = path.basename(assetName, path.extname(assetName))
+      if (REG_STYLE.test(assetName) && this.options.commonChunks.includes(fileName)) {
+        source.add(`@import ${JSON.stringify(urlToRequest(assetName))}`)
+        source.add('\n')
+        source.add(originSource)
+        assets[appStyle] = {
+          size: () => source.source().length,
+          source: () => source.source()
+        }
+      }
+    })
+  }
+
   generateMiniFiles (compilation: webpack.compilation.Compilation) {
     const baseTemplateName = 'base'
     const baseCompName = 'comp'
@@ -589,6 +616,7 @@ export default class TaroMiniPlugin {
       }
     })
     this.generateTabBarFiles(compilation)
+    this.injectCommonStyles(compilation)
   }
 
   run (compiler) {

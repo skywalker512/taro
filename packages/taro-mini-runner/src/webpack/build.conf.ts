@@ -20,15 +20,13 @@ import {
 import getBaseConf from './base.conf'
 import { Targets } from '../plugins/MiniPlugin'
 
-const emptyObj: Record<string, string> = {}
-
 export default (appPath: string, mode, config: Partial<IBuildConfig>): any => {
   const chain = getBaseConf(appPath)
   const {
     buildAdapter = BUILD_TYPES.WEAPP,
-    alias = emptyObj,
-    entry = emptyObj,
-    output = emptyObj,
+    alias = {},
+    entry = {},
+    output = {},
     outputRoot = 'dist',
     sourceRoot = 'src',
 
@@ -39,18 +37,18 @@ export default (appPath: string, mode, config: Partial<IBuildConfig>): any => {
     framework = 'nerv',
     prerender,
 
-    defineConstants = emptyObj,
-    env = emptyObj,
-    cssLoaderOption = emptyObj,
-    sassLoaderOption = emptyObj,
-    lessLoaderOption = emptyObj,
-    stylusLoaderOption = emptyObj,
-    mediaUrlLoaderOption = emptyObj,
-    fontUrlLoaderOption = emptyObj,
-    imageUrlLoaderOption = emptyObj,
-    miniCssExtractPluginOption = emptyObj,
+    defineConstants = {},
+    env = {},
+    cssLoaderOption = {},
+    sassLoaderOption = {},
+    lessLoaderOption = {},
+    stylusLoaderOption = {},
+    mediaUrlLoaderOption = {},
+    fontUrlLoaderOption = {},
+    imageUrlLoaderOption = {},
+    miniCssExtractPluginOption = {},
 
-    postcss = emptyObj,
+    postcss = {},
     nodeModulesPath,
     quickappJSON,
 
@@ -88,7 +86,7 @@ export default (appPath: string, mode, config: Partial<IBuildConfig>): any => {
       plugin: new VueLoaderPlugin()
     }
   }
-  alias[taroJsComponents] = `${taroJsComponents}/mini`
+  alias[taroJsComponents + '$'] = `${taroJsComponents}/mini`
   if (framework === 'react') {
     alias['react-dom'] = '@tarojs/react'
   }
@@ -140,7 +138,9 @@ export default (appPath: string, mode, config: Partial<IBuildConfig>): any => {
   plugin.providerPlugin = getProviderPlugin({
     window: ['@tarojs/runtime', 'window'],
     document: ['@tarojs/runtime', 'document'],
-    navigator: ['@tarojs/runtime', 'navigator']
+    navigator: ['@tarojs/runtime', 'navigator'],
+    requestAnimationFrame: ['@tarojs/runtime', 'requestAnimationFrame'],
+    cancelAnimationFrame: ['@tarojs/runtime', 'cancelAnimationFrame']
   })
 
   const isCssoEnabled = !((csso && csso.enable === false))
